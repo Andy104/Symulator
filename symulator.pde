@@ -12,7 +12,7 @@ void setup() {
   rectMode(CENTER);
   rect(height/2, width/2, 350, 350);
   
-  robot = new Robot(height/2, width/2, 15);
+  robot = new Robot(height/2, width/2, 0);
   robot.Display();
 }
 
@@ -29,7 +29,7 @@ void draw() {
   
   x += 1;
   y += 1;
-  phi += 0;
+  //phi += 1;
 }
 
 class Robot {
@@ -57,9 +57,9 @@ class Robot {
   void Display() {
     pushMatrix();
     translate(xpos, ypos);
-      
+
     rotate(radians(phi));
-  
+
     fill(0);
     rect(0, 0, 40, 40);
     popMatrix();
