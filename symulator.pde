@@ -16,21 +16,6 @@ Robot robot;
 Siec siec;
 
 void setup() {
-  
-  //Wektor danych testowych
-  /*
-  tabela = loadTable("wektor.txt", "tsv");
-  omegaR = new float[tabela.getRowCount()];
-  omegaL = new float[tabela.getRowCount()];
-  
-  for (int i = 0; i < tabela.getRowCount(); i++) {
-    omegaL[i] = tabela.getFloat(i, 0);
-    omegaR[i] = tabela.getFloat(i, 1);
-    //println(omegaL[i] + " " + omegaR[i]);
-  }
-  println(omegaL[0] + " " + omegaR[0]);
-  */
-  
   newTab = new Table();
   newTab.addColumn("x");
   newTab.addColumn("y");
@@ -59,10 +44,15 @@ void draw() {
   ghostY = new int[ghostTab.getRowCount()];
   
   float lol[] = new float[2];
-  if (j <= 1000) { lol[0] = 1100.0; lol[1] = 1300.0; }
-  if (j > 1000 && j <= 2000) { lol[0] = 1000.0; lol[1] = 2000.0; }
-  if (j > 2000 && j <= 3000) { lol[0] = 1200.0; lol[1] = 1300.0; }
-  if (j > 3000) { j = 0; }
+  if (j <= 190) { lol[0] = 1000.0; lol[1] = 1100.0; }
+  else if (j > 190 && j <= 240) {lol[0] = 2300; lol[1] = 1100.0; }
+  if (j > 240) {j = 0; }
+  
+  /*
+  if (j <= 50) { lol[0] = 2300.0; lol[1] = 1100.0; }
+  else if (j > 50 && j <= 240) { lol[0] = 1000.0; lol[1] = 1100.0;; }
+  if (j > 240) { j = 0; }
+  */
   siec.FeedForward(lol);
   
   println();
@@ -71,8 +61,20 @@ void draw() {
   println("wR = " + omegaR);
   println("dirR = " + dirR);
   
+  if (omegaL < 5) { omega[0] = 10; }
+  else if (omegaL >= 5 && omegaL < 15) { omega[0] = 10.3; }
+  else if (omegaL >= 15) { omega[0] = 10.6; }
+  
+  if (omegaR < 5) { omega[1] = 10; }
+  else if (omegaR >= 5 && omegaR < 15) { omega[1] = 10.3; }
+  else if (omegaR >= 15) { omega[1] = 10.6; }
+  
+  /*
+  if (omegaL < 0 || omegaR < 0) { omegaL = abs(omegaL); omegaR = abs(omegaR); }
+  
   if (dirL < 0) { omega[0] += (-1) * (3 + omegaL); } else { omega[0] = 3 + omegaL; }
   if (dirR < 0) { omega[1] += (-1) * (3 + omegaR); } else { omega[1] = 3 + omegaR; }
+  */
   
   println("omega[0] = ", omega[0]);
   println("omega[1] = ", omega[1]);
@@ -137,15 +139,16 @@ class Robot {
   void Phin() {
     float phin = phi + Tp * Omega();
     phi = phin;
+    println("phi: ", phi);
   }
   
   void Step(float omega[]) {
     wl = omega[0];
     wp = omega[1];
 
+    Phin();
     Xn();
     Yn();
-    Phin();
     
     newRow = newTab.addRow();
     newRow.setFloat("x", xpos);
@@ -167,12 +170,16 @@ class Robot {
     
     pushMatrix();
     translate(xpos, ypos);
+    //println("radians: ", radians(phi));
 
-    rotate(radians(phi));
+    rotate(phi);
 
     fill(0);
     noStroke();
     rect(0, 0, 40, 40);
+    stroke(1);
+    line(20, 10, 40, 30);
+    line(20, -10, 40, -30);
     popMatrix();
   }
 }
@@ -263,13 +270,13 @@ class Siec {
       println("Neuron " + z + " = " + outputNeuron[z]);
       
       if (z == 0) {
-        omegaL = 2 * (outputNeuron[z] + 1) / (1 + 1);
+        omegaL = 20 * (outputNeuron[z] + 1) / (1 + 1);
       }
       if (z == 1) {
         dirL = 2 * (outputNeuron[z] + 1) / 2 - 1;
       }
       if (z == 2) {
-        omegaR = 2 * (outputNeuron[z] + 1) / (1 + 1);
+        omegaR = 20 * (outputNeuron[z] + 1) / (1 + 1);
       }
       if (z == 3) {
         dirR = 2 * (outputNeuron[z] + 1) / 2 - 1;
