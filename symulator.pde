@@ -60,10 +60,10 @@ void draw() {
   objectX = new int[objectTab.getRowCount()];
   objectY = new int[objectTab.getRowCount()];
   
-  line(objectTab.getRow(0).getInt("x"), objectTab.getRow(0).getInt("x"), objectTab.getRow(0).getInt("x"), objectTab.getRow(0).getInt("x"),);
-  line();
-  line();
-  line();
+  line(objectTab.getRow(0).getInt("x"), objectTab.getRow(0).getInt("y"), objectTab.getRow(1).getInt("x"), objectTab.getRow(1).getInt("y"));
+  line(objectTab.getRow(1).getInt("x"), objectTab.getRow(1).getInt("y"), objectTab.getRow(2).getInt("x"), objectTab.getRow(2).getInt("y"));
+  line(objectTab.getRow(2).getInt("x"), objectTab.getRow(2).getInt("y"), objectTab.getRow(3).getInt("x"), objectTab.getRow(3).getInt("y"));
+  line(objectTab.getRow(3).getInt("x"), objectTab.getRow(3).getInt("y"), objectTab.getRow(0).getInt("x"), objectTab.getRow(0).getInt("y"));
   
   for (int i = 0; i < objectTab.getRowCount(); i++) {
     TableRow row = objectTab.getRow(i);
