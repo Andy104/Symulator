@@ -60,6 +60,11 @@ void draw() {
   objectX = new int[objectTab.getRowCount()];
   objectY = new int[objectTab.getRowCount()];
   
+  line(objectTab.getRow(0).getInt("x"), objectTab.getRow(0).getInt("x"), objectTab.getRow(0).getInt("x"), objectTab.getRow(0).getInt("x"),);
+  line();
+  line();
+  line();
+  
   for (int i = 0; i < objectTab.getRowCount(); i++) {
     TableRow row = objectTab.getRow(i);
     if ((row.getInt("x") == round(robot.xSensEnd + robot.xpos)) && (row.getInt("y") == round(robot.ySensEnd + robot.ypos))) {
@@ -73,19 +78,25 @@ void draw() {
     }
   }
   
+  if (j <= 100) {signal[0] = 1000; signal[1] = 1300; }
+  else if (j > 100 && j <= 120) {signal[0] = 1800; signal[1] = 1200;}
+  else if (j > 120 && j <= 220) {signal[0] = 1000; signal[1] = 1300; }
+  else if (j > 220 && j <= 250) {signal[0] = 1200; signal[1] = 2000; }
+  else {j = 0;}
+  
   omega = siec.FeedForward(signal);
   //println("omegaL: ", omega[0], " omegaR: ", omega[2], "dirL: ", omega[1], " dirR: ", omega[3]);
   
   if (omega[1] >= -0.5) { omega[0] = abs(omega[0]); }
   if (omega[3] >= -0.5) { omega[2] = abs(omega[2]); }
   
-  if (omega[0] < 5) { omegaL = 10.0; }
-  else if (omega[0] >= 5 && omega[0] < 15) { omegaL = 10.1; }
-  else if (omega[0] >= 15) { omegaL = 10.2; }
+  if (omega[0] < 5) { omegaL = 1.0; }
+  else if (omega[0] >= 5 && omega[0] < 15) { omegaL = 1.1; }
+  else if (omega[0] >= 15) { omegaL = 1.2; }
   
-  if (omega[2] < 5) { omegaR = 10.0; }
-  else if (omega[2] >= 5 && omega[2] < 15) { omegaR = 10.1; }
-  else if (omega[2] >= 15) { omegaR = 10.2; }
+  if (omega[2] < 5) { omegaR = 1.0; }
+  else if (omega[2] >= 5 && omega[2] < 15) { omegaR = 1.1; }
+  else if (omega[2] >= 15) { omegaR = 1.2; }
   
   /*println();
   println("wL = " + omegaL);
@@ -135,12 +146,12 @@ class Robot {
   }
   
   float Velocity() {
-    float vel = abs(wp + wl) * r / 2;
+    float vel = wp + wl * r / 2;
     return vel;
   }
   
   float Omega() {
-    float omg = abs(wp - wl) * r / d;
+    float omg = (wp - wl) * r / d;
     return omg;
   }
   
@@ -167,7 +178,7 @@ class Robot {
   void Phin() {
     float phin = phi + Tp * Omega();
     phi = phin;
-    //println("phi: ", degrees(phi));
+    //println("phi: ", phi);
   }
   
   void Step(float left, float right) {
@@ -191,7 +202,7 @@ class Robot {
       point(row.getInt("x"), row.getInt("y"));
     }
     for(TableRow row : objectTab.rows()) {
-      point(row.getInt("x"), row.getInt("y"));
+      line(row.getInt("x"), row.getInt("y"), row.getInt("x"), row.getInt("y"));
     }
     
     pushMatrix();
