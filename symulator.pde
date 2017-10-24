@@ -1,16 +1,29 @@
+// Okno główne
+PFont f;
 int j;
 
 int ghostX[];
 int ghostY[];
 Table ghostTab;
+
+int objectX[];
+int objectY[];
+Table objectTab;
+
 Table newTab;
 TableRow newRow;
 
+// Robot
+float signal[];
+float omega[];
 float omegaL;
 float omegaR;
-float omega[];
 float dirR;
 float dirL;
+
+// Obiekty
+PVector czulka;
+PVector przeszkoda;
 
 Robot robot;
 Siec siec;
@@ -19,74 +32,75 @@ void setup() {
   newTab = new Table();
   newTab.addColumn("x");
   newTab.addColumn("y");
-  
   saveTable(newTab, "ghost.tsv");
   
-  omega = new float[2];
+  omega = new float[4];
+  signal = new float[2];
+  f = createFont("Arial", 16);
   
   //Okno główne
-  
   size(400, 400);
-  background(127);
-  fill(255);
-  rectMode(CENTER);
-  rect(height/2, width/2, 350, 350);
   
   //Symulacja
   robot = new Robot(height/2, width/2, 0, 0.1, 0.05);
   siec = new Siec(2, 8, 4);
 }
 
-
 void draw() {
+  background(127);
+  fill(255);
+  rectMode(CENTER);
+  rect(height/2, width/2, 350, 350);
+  
   ghostTab = loadTable("ghost.tsv", "tsv, header");
   ghostX = new int[ghostTab.getRowCount()];
   ghostY = new int[ghostTab.getRowCount()];
   
-  float lol[] = new float[2];
-  if (j <= 190) { lol[0] = 1000.0; lol[1] = 1100.0; }
-  else if (j > 190 && j <= 240) {lol[0] = 2300; lol[1] = 1100.0; }
-  if (j > 240) {j = 0; }
+  objectTab = loadTable("objects.tsv", "tsv, header");
+  objectX = new int[objectTab.getRowCount()];
+  objectY = new int[objectTab.getRowCount()];
   
-  /*
-  if (j <= 50) { lol[0] = 2300.0; lol[1] = 1100.0; }
-  else if (j > 50 && j <= 240) { lol[0] = 1000.0; lol[1] = 1100.0;; }
-  if (j > 240) { j = 0; }
-  */
-  siec.FeedForward(lol);
+  for (int i = 0; i < objectTab.getRowCount(); i++) {
+    TableRow row = objectTab.getRow(i);
+    if ((row.getInt("x") == round(robot.xSensEnd + robot.xpos)) && (row.getInt("y") == round(robot.ySensEnd + robot.ypos))) {
+      float angle = atan2(robot.ySensEnd-robot.ySensStart, robot.xSensEnd-robot.xSensStart);
+      float angle2 = atan2(objectTab.getRow(i).getInt("y")-objectTab.getRow(i-1).getInt("y"), objectTab.getRow(i).getInt("x")-objectTab.getRow(i-1).getInt("x"));
+      println("!!!!!!!!!!!! lolololo !!!!!!!!!!!!   ", angle, "   ", angle2);
+      //float dif = round(degrees());
+    } else {
+      signal[0] = 1000.0;
+      signal[1] = 1000.0;
+    }
+  }
   
-  println();
+  omega = siec.FeedForward(signal);
+  //println("omegaL: ", omega[0], " omegaR: ", omega[2], "dirL: ", omega[1], " dirR: ", omega[3]);
+  
+  if (omega[1] >= -0.5) { omega[0] = abs(omega[0]); }
+  if (omega[3] >= -0.5) { omega[2] = abs(omega[2]); }
+  
+  if (omega[0] < 5) { omegaL = 10.0; }
+  else if (omega[0] >= 5 && omega[0] < 15) { omegaL = 10.1; }
+  else if (omega[0] >= 15) { omegaL = 10.2; }
+  
+  if (omega[2] < 5) { omegaR = 10.0; }
+  else if (omega[2] >= 5 && omega[2] < 15) { omegaR = 10.1; }
+  else if (omega[2] >= 15) { omegaR = 10.2; }
+  
+  /*println();
   println("wL = " + omegaL);
   println("dirL = " + dirL);
   println("wR = " + omegaR);
-  println("dirR = " + dirR);
+  println("dirR = " + dirR);*/
   
-  if (omegaL < 5) { omega[0] = 10; }
-  else if (omegaL >= 5 && omegaL < 15) { omega[0] = 10.3; }
-  else if (omegaL >= 15) { omega[0] = 10.6; }
-  
-  if (omegaR < 5) { omega[1] = 10; }
-  else if (omegaR >= 5 && omegaR < 15) { omega[1] = 10.3; }
-  else if (omegaR >= 15) { omega[1] = 10.6; }
-  
-  /*
-  if (omegaL < 0 || omegaR < 0) { omegaL = abs(omegaL); omegaR = abs(omegaR); }
-  
-  if (dirL < 0) { omega[0] += (-1) * (3 + omegaL); } else { omega[0] = 3 + omegaL; }
-  if (dirR < 0) { omega[1] += (-1) * (3 + omegaR); } else { omega[1] = 3 + omegaR; }
-  */
-  
-  println("omega[0] = ", omega[0]);
-  println("omega[1] = ", omega[1]);
-  
-  robot.Step(omega);
+  robot.Step(omegaL, omegaR);
   robot.Display();
   
   j++;
 }
 
 class Robot {
-  float d;
+  float d;  
   float r;
   float wl;
   float wp;
@@ -96,6 +110,13 @@ class Robot {
   float ypos;
   float phi;
   
+  float xRobot;
+  float yRobot;
+  float xSensStart;
+  float ySensStart;
+  float xSensEnd;
+  float ySensEnd;
+  
   Robot(float x, float y, float kat, float dl, float pr) {
     Tp = 1;
     xpos = x;
@@ -104,6 +125,13 @@ class Robot {
     
     d = dl;
     r = pr;
+    
+    xRobot = 40;
+    xSensStart = xRobot / 2;
+    xSensEnd = xSensStart + 15;
+    yRobot = 30;
+    ySensStart = yRobot / 3;
+    ySensEnd = ySensStart + 15;
   }
   
   float Velocity() {
@@ -117,12 +145,12 @@ class Robot {
   }
   
   float Vxn() {
-    float vx = (abs(wp + wl) * r / 2) * cos(phi);
+    float vx = Velocity() * cos(phi);
     return vx;
   }
   
   float Vyn() {
-    float vy = (abs(wp + wl) * r / 2) * sin(phi);
+    float vy = Velocity() * sin(phi);
     return vy;
   }
   
@@ -139,16 +167,18 @@ class Robot {
   void Phin() {
     float phin = phi + Tp * Omega();
     phi = phin;
-    println("phi: ", phi);
+    //println("phi: ", degrees(phi));
   }
   
-  void Step(float omega[]) {
-    wl = omega[0];
-    wp = omega[1];
+  void Step(float left, float right) {
+    wl = left;
+    wp = right;
 
     Phin();
     Xn();
     Yn();
+    
+    czulka = new PVector(xpos+xSensEnd, ypos+ySensEnd);
     
     newRow = newTab.addRow();
     newRow.setFloat("x", xpos);
@@ -157,29 +187,24 @@ class Robot {
   }
   
   void Display() {
-    size(400, 400);
-    background(210);
-    fill(255);
-    stroke(1);
-    rectMode(CENTER);
-    rect(height/2, width/2, 350, 350);
-    
     for(TableRow row : ghostTab.rows()) {
+      point(row.getInt("x"), row.getInt("y"));
+    }
+    for(TableRow row : objectTab.rows()) {
       point(row.getInt("x"), row.getInt("y"));
     }
     
     pushMatrix();
     translate(xpos, ypos);
-    //println("radians: ", radians(phi));
-
     rotate(phi);
 
     fill(0);
     noStroke();
-    rect(0, 0, 40, 40);
+    rectMode(CENTER);
+    rect(0, 0, xRobot, yRobot);
     stroke(1);
-    line(20, 10, 40, 30);
-    line(20, -10, 40, -30);
+    line(xSensStart, ySensStart, xSensEnd, ySensEnd);
+    line(xSensStart, -ySensStart, xSensEnd, -ySensEnd);
     popMatrix();
   }
 }
@@ -231,24 +256,21 @@ class Siec {
     return (2 / (1 + exp((-2) * value))) -1 ;
   }
   
-  void FeedForward(float InputVals[]) {
+  float[] FeedForward(float InputVals[]) {
     int x;
     int y;
     int z;
     
-    //InputVals[0] = inputL;
-    //InputVals[1] = inputR;
+    //println("\nInputVals[0] = " + InputVals[0] );
+    //println("InputVals[1] = " + InputVals[1] );
     
-    println("\nInputVals[0] = " + InputVals[0] );
-    println("InputVals[1] = " + InputVals[1] );
-    
-    println("\nInputLayer: ", inputLayer);
+    //println("\nInputLayer: ", inputLayer);
     for(x = 0; x < inputLayer; x++) {
       inputNeuron[x] = ((1 + 1) * (InputVals[x] - 1000) / (4000 - 1000)) - 1;
-      println("Neuron " + x + " = " + inputNeuron[x]);
+      //println("Neuron " + x + " = " + inputNeuron[x]);
     }
     
-    println("\nHiddenLayer: ", hiddenLayer);
+    //println("\nHiddenLayer: ", hiddenLayer);
     for(y = 0; y < hiddenLayer; y++) {
       sum = 0;
       for(x = 0; x < inputLayer; x++) {
@@ -256,33 +278,33 @@ class Siec {
       }
       sum += 1.0 * inputWeight[x][y];
       hiddenNeuron[y] = Tansig(sum);
-      println("Neuron " + y + " = " + hiddenNeuron[y]);
+      //println("Neuron " + y + " = " + hiddenNeuron[y]);
     }
     
-    println("\nOutputLayer: ", outputLayer);
+    //println("\nOutputLayer: ", outputLayer);
     for(z = 0; z < outputLayer; z++) {
       sum = 0;
       for(y = 0; y < hiddenLayer; y++) {
         sum += hiddenNeuron[y] * hiddenWeight[y][z];
       }
       sum += 1.0 * hiddenWeight[y][z];
-      outputNeuron[z] = sum;//Tansig(sum);  // <-- Nie wiem czemu tak?
-      println("Neuron " + z + " = " + outputNeuron[z]);
+      outputNeuron[z] = sum;
+      //println("Neuron " + z + " = " + outputNeuron[z]);
       
       if (z == 0) {
-        omegaL = 20 * (outputNeuron[z] + 1) / (1 + 1);
+        OutputVals[z] = 20 * (outputNeuron[z] + 1) / (1 + 1);
       }
       if (z == 1) {
-        dirL = 2 * (outputNeuron[z] + 1) / 2 - 1;
+        OutputVals[z] = 2 * (outputNeuron[z] + 1) / 2 - 1;
       }
       if (z == 2) {
-        omegaR = 20 * (outputNeuron[z] + 1) / (1 + 1);
+        OutputVals[z] = 20 * (outputNeuron[z] + 1) / (1 + 1);
       }
       if (z == 3) {
-        dirR = 2 * (outputNeuron[z] + 1) / 2 - 1;
+        OutputVals[z] = 2 * (outputNeuron[z] + 1) / 2 - 1;
       }
-      
-      //println("Output " + z + " : " + OutputVals[z]);
     }
+    
+    return OutputVals;
   }
 }
