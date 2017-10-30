@@ -13,6 +13,14 @@ Table objectTab;
 Table newTab;
 TableRow newRow;
 
+// Czułki
+int numSegments = 5;
+float[] x = new float[numSegments];
+float[] y = new float[numSegments];
+float[] angle = new float[numSegments];
+float segLength = 20;
+float targetX, targetY;
+
 // Robot
 float signal[];
 float omega[];
@@ -40,6 +48,7 @@ void setup() {
   
   //Okno główne
   size(400, 400);
+  strokeWeight(1);
   
   //Symulacja
   robot = new Robot(height/2, width/2, 0, 0.1, 0.05);
@@ -60,10 +69,9 @@ void draw() {
   objectX = new int[objectTab.getRowCount()];
   objectY = new int[objectTab.getRowCount()];
   
-  line(objectTab.getRow(0).getInt("x"), objectTab.getRow(0).getInt("y"), objectTab.getRow(1).getInt("x"), objectTab.getRow(1).getInt("y"));
-  line(objectTab.getRow(1).getInt("x"), objectTab.getRow(1).getInt("y"), objectTab.getRow(2).getInt("x"), objectTab.getRow(2).getInt("y"));
-  line(objectTab.getRow(2).getInt("x"), objectTab.getRow(2).getInt("y"), objectTab.getRow(3).getInt("x"), objectTab.getRow(3).getInt("y"));
-  line(objectTab.getRow(3).getInt("x"), objectTab.getRow(3).getInt("y"), objectTab.getRow(0).getInt("x"), objectTab.getRow(0).getInt("y"));
+  for (TableRow row : objectTab.rows()) {
+    point(row.getInt("x"), row.getInt("y"));
+  }
   
   for (int i = 0; i < objectTab.getRowCount(); i++) {
     TableRow row = objectTab.getRow(i);
@@ -73,30 +81,33 @@ void draw() {
       println("!!!!!!!!!!!! lolololo !!!!!!!!!!!!   ", angle, "   ", angle2);
       //float dif = round(degrees());
     } else {
-      signal[0] = 1000.0;
-      signal[1] = 1000.0;
+      //signal[0] = 1000.0;
+      //signal[1] = 1000.0;
     }
   }
   
+  /*
   if (j <= 100) {signal[0] = 1000; signal[1] = 1300; }
   else if (j > 100 && j <= 120) {signal[0] = 1800; signal[1] = 1200;}
   else if (j > 120 && j <= 220) {signal[0] = 1000; signal[1] = 1300; }
   else if (j > 220 && j <= 250) {signal[0] = 1200; signal[1] = 2000; }
-  else {j = 0;}
+  else {j = 0;}*/
   
-  omega = siec.FeedForward(signal);
+  //omega = siec.FeedForward(signal);
   //println("omegaL: ", omega[0], " omegaR: ", omega[2], "dirL: ", omega[1], " dirR: ", omega[3]);
   
+  /*
   if (omega[1] >= -0.5) { omega[0] = abs(omega[0]); }
   if (omega[3] >= -0.5) { omega[2] = abs(omega[2]); }
   
-  if (omega[0] < 5) { omegaL = 1.0; }
-  else if (omega[0] >= 5 && omega[0] < 15) { omegaL = 1.1; }
-  else if (omega[0] >= 15) { omegaL = 1.2; }
+  if (omega[0] < 5) { omegaL = 0.10; }
+  else if (omega[0] >= 5 && omega[0] < 15) { omegaL = 0.11; }
+  else if (omega[0] >= 15) { omegaL = 0.12; }
   
-  if (omega[2] < 5) { omegaR = 1.0; }
-  else if (omega[2] >= 5 && omega[2] < 15) { omegaR = 1.1; }
-  else if (omega[2] >= 15) { omegaR = 1.2; }
+  if (omega[2] < 5) { omegaR = 0.10; }
+  else if (omega[2] >= 5 && omega[2] < 15) { omegaR = 0.11; }
+  else if (omega[2] >= 15) { omegaR = 0.12; }
+  */
   
   /*println();
   println("wL = " + omegaL);
@@ -108,6 +119,28 @@ void draw() {
   robot.Display();
   
   j++;
+}
+
+void positionSegment(int a, int b) {
+  x[b] = x[a] + cos(angle[a]) * segLength;
+  y[b] = y[a] + sin(angle[a]) * segLength; 
+}
+
+void reachSegment(int i, float xin, float yin) {
+  float dx = xin - x[i];
+  float dy = yin - y[i];
+  angle[i] = atan2(dy, dx);  
+  targetX = xin - cos(angle[i]) * segLength;
+  targetY = yin - sin(angle[i]) * segLength;
+}
+
+void segment(float x, float y, float a) {
+  strokeWeight(1);
+  pushMatrix();
+  translate(x, y);
+  rotate(a);
+  line(0, 0, segLength, 0);
+  popMatrix();
 }
 
 class Robot {
@@ -198,6 +231,7 @@ class Robot {
   }
   
   void Display() {
+    strokeWeight(1);
     for(TableRow row : ghostTab.rows()) {
       point(row.getInt("x"), row.getInt("y"));
     }
@@ -208,7 +242,24 @@ class Robot {
     pushMatrix();
     translate(xpos, ypos);
     rotate(phi);
-
+    
+    reachSegment(0, mouseX-width/2, mouseY-height/2);
+    for(int i=1; i<numSegments; i++) {
+      reachSegment(i, targetX, targetY);
+    }
+    for(int i=x.length-1; i>=1; i--) {
+      positionSegment(i, i-1);  
+    } 
+    for(int i=0; i<x.length; i++) {
+      segment(x[i], y[i], angle[i]); 
+    }
+    
+    float max = 0;
+    for (int n = 0; n < numSegments; n++) {
+      max += degrees(abs(angle[n]));
+    }
+    println(max / numSegments);
+    
     fill(0);
     noStroke();
     rectMode(CENTER);
