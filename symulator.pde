@@ -14,11 +14,11 @@ Table newTab;
 TableRow newRow;
 
 // Czułki
-int numSegments = 10;
+int numSegments = 5;
 float[] x = new float[numSegments];
 float[] y = new float[numSegments];
 float[] angle = new float[numSegments];
-float segLength = 10;
+float segLength = 20;
 float targetX, targetY;
 
 // Robot
@@ -81,30 +81,33 @@ void draw() {
       println("!!!!!!!!!!!! lolololo !!!!!!!!!!!!   ", angle, "   ", angle2);
       //float dif = round(degrees());
     } else {
-      signal[0] = 1000.0;
-      signal[1] = 1000.0;
+      //signal[0] = 1000.0;
+      //signal[1] = 1000.0;
     }
   }
   
+  /*
   if (j <= 100) {signal[0] = 1000; signal[1] = 1300; }
   else if (j > 100 && j <= 120) {signal[0] = 1800; signal[1] = 1200;}
   else if (j > 120 && j <= 220) {signal[0] = 1000; signal[1] = 1300; }
   else if (j > 220 && j <= 250) {signal[0] = 1200; signal[1] = 2000; }
-  else {j = 0;}
+  else {j = 0;}*/
   
-  omega = siec.FeedForward(signal);
+  //omega = siec.FeedForward(signal);
   //println("omegaL: ", omega[0], " omegaR: ", omega[2], "dirL: ", omega[1], " dirR: ", omega[3]);
   
+  /*
   if (omega[1] >= -0.5) { omega[0] = abs(omega[0]); }
   if (omega[3] >= -0.5) { omega[2] = abs(omega[2]); }
   
   if (omega[0] < 5) { omegaL = 0.10; }
-  else if (omega[0] >= 5 && omega[0] < 15) { omegaL = 1.11; }
+  else if (omega[0] >= 5 && omega[0] < 15) { omegaL = 0.11; }
   else if (omega[0] >= 15) { omegaL = 0.12; }
   
   if (omega[2] < 5) { omegaR = 0.10; }
-  else if (omega[2] >= 5 && omega[2] < 15) { omegaR = 1.11; }
+  else if (omega[2] >= 5 && omega[2] < 15) { omegaR = 0.11; }
   else if (omega[2] >= 15) { omegaR = 0.12; }
+  */
   
   /*println();
   println("wL = " + omegaL);
@@ -240,7 +243,7 @@ class Robot {
     translate(xpos, ypos);
     rotate(phi);
     
-    reachSegment(0, 40, -20);
+    reachSegment(0, mouseX-width/2, mouseY-height/2);
     for(int i=1; i<numSegments; i++) {
       reachSegment(i, targetX, targetY);
     }
@@ -250,6 +253,12 @@ class Robot {
     for(int i=0; i<x.length; i++) {
       segment(x[i], y[i], angle[i]); 
     }
+    
+    float max = 0;
+    for (int n = 0; n < numSegments; n++) {
+      max += degrees(abs(angle[n]));
+    }
+    println(max / numSegments);
     
     fill(0);
     noStroke();
