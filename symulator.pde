@@ -40,38 +40,46 @@ void setup() {
   strokeWeight(1);
   
   //Symulacja
-  robot = new Robot(height/2, width/2, 0, 0.1, 0.05);
+  robot = new Robot(30, 20, height/2, width/2, 0, 0.1, 0.05);
   siec = new Siec(2, 8, 4);
 }
 
 void draw() {
+  
+  /***  Okno główne  ***/
   background(127);
   fill(255);
   rectMode(CENTER);
   rect(height/2, width/2, 350, 350);
   
+  /***  Ślad robota  ***/
   ghostTab = loadTable("ghost.tsv", "tsv, header");
   ghostX = new int[ghostTab.getRowCount()];
   ghostY = new int[ghostTab.getRowCount()];
   
+  /***  Przeszkody  ***/
   objectTab = loadTable("objects.tsv", "tsv, header");
   objectX = new int[objectTab.getRowCount()];
   objectY = new int[objectTab.getRowCount()];
   
+  /***  Sygnał czułek  ***/
+  //  Wczytanie położenia przeszkód
   for (TableRow row : objectTab.rows()) {
     point(row.getInt("x"), row.getInt("y"));
   }
   
+  //  Sprawdzenie położenia przeszkód i czułek
   for (int i = 0; i < objectTab.getRowCount(); i++) {
     TableRow row = objectTab.getRow(i);
-    if ((row.getInt("x") == round(robot.xSensorEnd + robot.xpos)) && (row.getInt("y") == round(robot.ySensorEnd + robot.ypos))) {
-      float angle = atan2(robot.ySensorEnd-robot.ySensorStart, robot.xSensorEnd-robot.xSensorStart);
-      float angle2 = atan2(objectTab.getRow(i).getInt("y")-objectTab.getRow(i-1).getInt("y"), objectTab.getRow(i).getInt("x")-objectTab.getRow(i-1).getInt("x"));
-      println("!!!!!!!!!!!! lolololo !!!!!!!!!!!!   ", angle, "   ", angle2);
-      //float dif = round(degrees());
+    if ((row.getInt("x") == (int)round(robot.xSensorEnd + robot.xpos)) && (row.getInt("y") == (int)round(robot.ySensorEnd + robot.ypos))) {
+      println("przeszkoda");
+      //robot.czulki(wykryto przeszkode);
+      //robot.czulki(położenie punktu zaczepienia);
+      //robot.czulki(row.getInt("x"), row.getInt("y"));
     } else {
-      //signal[0] = 1000.0;
-      //signal[1] = 1000.0;
+      //robot.czulki(brak przeszkody);
+      //robot.czulki(położenie czułki swobodne);
+      //robot.czulki((int)round(robot.xSensorEnd + robot.xpos), (int)round(robot.ySensorEnd + robot.ypos));
     }
   }
   
@@ -82,10 +90,10 @@ void draw() {
   else if (j > 220 && j <= 250) {signal[0] = 1200; signal[1] = 2000; }
   else {j = 0;}
   
-  omega = siec.FeedForward(signal);
-  //println("omegaL: ", omega[0], " omegaR: ", omega[2], "dirL: ", omega[1], " dirR: ", omega[3]);
+  //Odpowiedź sieci na obliczony sygnał
+  omega = siec.FeedForward(signal);  
   
-  
+  //Przeliczenie wartości PWM na prędkość
   if (omega[1] >= -0.5) { omega[0] = abs(omega[0]); }
   if (omega[3] >= -0.5) { omega[2] = abs(omega[2]); }
   
@@ -137,7 +145,7 @@ class Robot {
   float targetX, targetY;
   
   //Konstruktor
-  Robot(float x, float y, float kat, float dl, float pr) {
+  Robot(int szerokosc, int dlugosc, float x, float y, float kat, float dl, float pr) {
     Tp = 1;
     xpos = x;
     ypos = y;
@@ -146,14 +154,15 @@ class Robot {
     d = dl;
     r = pr;
     
-    xRobot = 40;
+    xRobot = szerokosc;
+    yRobot = dlugosc;
+    
     xSensorStart = xRobot / 2;
     xSensorEnd = xSensorStart + 15;
-    yRobot = 30;
-    ySensorStart = yRobot / 3;
-    ySensorEnd = ySensorStart + 15;
+    ySensorStart = yRobot / 4;
+    ySensorEnd = ySensorStart + 12;
     
-    numSegments = 5;
+    numSegments = 10;
     segLength = 2;
     xSeg = new float[numSegments];
     ySeg = new float[numSegments];
@@ -172,6 +181,7 @@ class Robot {
     angleSeg[i] = atan2(dy, dx);  
     targetX = xin - cos(angleSeg[i]) * segLength;
     targetY = yin - sin(angleSeg[i]) * segLength;
+    //println(i, " ", targetX, " ", targetY);
   }
 
   void segment(float x, float y, float a, float deltaX, float deltaY) {
@@ -232,20 +242,25 @@ class Robot {
     saveTable(newTab, "ghost.tsv");
   }
   
+  void Signal() {
+    
+  }
+  
+  void Signal(int left, int right) {
+    
+  }
+  
   void Display() {
     strokeWeight(1);
     for(TableRow row : ghostTab.rows()) {
       point(row.getInt("x"), row.getInt("y"));
-    }
-    for(TableRow row : objectTab.rows()) {
-      line(row.getInt("x"), row.getInt("y"), row.getInt("x"), row.getInt("y"));
     }
     
     pushMatrix();
     translate(xpos, ypos);
     rotate(phi);
     
-    reachSegment(0, 30, 20);
+    reachSegment(0, xSensorEnd, ySensorEnd);
     for(int i=1; i<numSegments; i++) {
       reachSegment(i, targetX, targetY);
     }
@@ -253,22 +268,20 @@ class Robot {
       positionSegment(i, i-1);  
     } 
     for(int i=0; i<xSeg.length; i++) {
-      segment(xSeg[i], ySeg[i], angleSeg[i], 20, 10); 
+      segment(xSeg[i], ySeg[i], angleSeg[i], xSensorStart, ySensorStart); 
     }
     
     float max = 0;
     for (int n = 0; n < numSegments; n++) {
       max += degrees(abs(angleSeg[n]));
     }
-    println(max / numSegments);
+    //println(max / numSegments);
     
     fill(0);
     noStroke();
     rectMode(CENTER);
     rect(0, 0, xRobot, yRobot);
     stroke(1);
-    //line(xSensStart, ySensStart, xSensEnd, ySensEnd);
-    //line(xSensStart, -ySensStart, xSensEnd, -ySensEnd);
     popMatrix();
   }
 }
