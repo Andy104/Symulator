@@ -66,23 +66,7 @@ void draw() {
   //  Wczytanie położenia przeszkód
   for (TableRow row : objectTab.rows()) {
     point(row.getInt("x"), row.getInt("y"));
-  }
-  
-  //  Sprawdzenie położenia przeszkód i czułek
-  for (int i = 0; i < objectTab.getRowCount(); i++) {
-    TableRow row = objectTab.getRow(i);
-    if ((row.getInt("x") == (int)round(robot.xSensorEnd + robot.xpos)) && (row.getInt("y") == (int)round(robot.ySensorEnd + robot.ypos))) {
-      println("przeszkoda");
-      //robot.czulki(wykryto przeszkode);
-      //robot.czulki(położenie punktu zaczepienia);
-      //robot.czulki(row.getInt("x"), row.getInt("y"));
-    } else {
-      //robot.czulki(brak przeszkody);
-      //robot.czulki(położenie czułki swobodne);
-      //robot.czulki((int)round(robot.xSensorEnd + robot.xpos), (int)round(robot.ySensorEnd + robot.ypos));
-    }
-  }
-  
+  }  
   
   if (j <= 100) {signal[0] = 1000; signal[1] = 1300; }
   else if (j > 100 && j <= 120) {signal[0] = 1800; signal[1] = 1200;}
@@ -129,20 +113,8 @@ class Robot {
   float ypos;
   float phi;
   
-  float xRobot;
-  float yRobot;
-  float xSensorStart;
-  float ySensorStart;
-  float xSensorEnd;
-  float ySensorEnd;
-  
-  //Czułki
-  int numSegments;
-  float xSeg[];
-  float ySeg[];
-  float angleSeg[];
-  float segLength;
-  float targetX, targetY;
+  PVector robot, sensorStart, sensorEnd, przeszkoda;
+  int radius;
   
   //Konstruktor
   Robot(int szerokosc, int dlugosc, float x, float y, float kat, float dl, float pr) {
@@ -154,43 +126,14 @@ class Robot {
     d = dl;
     r = pr;
     
-    xRobot = szerokosc;
-    yRobot = dlugosc;
+    robot = new PVector(szerokosc, dlugosc);
+    sensorStart = new PVector(robot.x/2, robot.y/4);
+    sensorEnd = new PVector(sensorStart.x+15, sensorStart.y+12);
+    przeszkoda = new PVector(0, 0);
     
-    xSensorStart = xRobot / 2;
-    xSensorEnd = xSensorStart + 15;
-    ySensorStart = yRobot / 4;
-    ySensorEnd = ySensorStart + 12;
-    
-    numSegments = 10;
-    segLength = 2;
-    xSeg = new float[numSegments];
-    ySeg = new float[numSegments];
-    angleSeg = new float[numSegments];
-    
-  }
-  
-  void positionSegment(int a, int b) {
-    xSeg[b] = xSeg[a] + cos(angleSeg[a]) * segLength;
-    ySeg[b] = ySeg[a] + sin(angleSeg[a]) * segLength; 
-  }
-
-  void reachSegment(int i, float xin, float yin) {
-    float dx = xin - xSeg[i];
-    float dy = yin - ySeg[i];
-    angleSeg[i] = atan2(dy, dx);  
-    targetX = xin - cos(angleSeg[i]) * segLength;
-    targetY = yin - sin(angleSeg[i]) * segLength;
-    //println(i, " ", targetX, " ", targetY);
-  }
-
-  void segment(float x, float y, float a, float deltaX, float deltaY) {
-    strokeWeight(1);
-    pushMatrix();
-    translate(x+deltaX, y+deltaY);
-    rotate(a);
-    line(0, 0, segLength, 0);
-    popMatrix();
+    if (szerokosc >= dlugosc) {
+      radius = szerokosc;
+    }
   }
   
   float Velocity() {
@@ -228,6 +171,29 @@ class Robot {
     phi = phin;
   }
   
+  void Collision(float xGlobal, float yGlobal, float aGlobal) {
+    
+    for (int i = 0; i < objectTab.getRowCount(); i++) {
+      TableRow row = objectTab.getRow(i);
+      
+      if ((row.getInt("x")-200 == (int)round(sensorEnd.x) && (row.getInt("y")-200) == (int)round(sensorEnd.y)) {
+        println("czułka prawa", (row.getInt("x")-(int)xGlobal), (int)round(sensorEnd.x), (row.getInt("y")-(int)yGlobal), (int)round(sensorEnd.y));
+      }
+      println("czułka lewa", (row.getInt("x")-(int)xGlobal), (int)sensorEnd.x, (row.getInt("y")-200), (int)sensorEnd.y, xpos, ypos);
+      
+      if (((row.getInt("x")-200) == -(int)round(sensorEnd.x) && ((row.getInt("y")-(int)yGlobal)) == -(int)round(sensorEnd.y))) {
+        println("czułka lewa", (row.getInt("x")-(int)xGlobal), (int)round(sensorEnd.x), (row.getInt("y")-(int)yGlobal), (int)round(sensorEnd.y));
+      }
+    }
+  }
+  
+  void Sensors(float xStart, float yStart, float xEnd, float yEnd) {
+    bezier(sensorStart.x, sensorStart.y, sensorStart.x+20, sensorStart.y+5, 
+                (int)xStart, (int)yStart, (int)xEnd , (int)yEnd);
+    bezier(sensorStart.x, -sensorStart.y, sensorStart.x+20, -sensorStart.y-5, 
+                (int)xStart, -(int)yStart, (int)xEnd , -(int)yEnd);
+  }
+  
   void Step(float left, float right) {
     wl = left;
     wp = right;
@@ -242,14 +208,6 @@ class Robot {
     saveTable(newTab, "ghost.tsv");
   }
   
-  void Signal() {
-    
-  }
-  
-  void Signal(int left, int right) {
-    
-  }
-  
   void Display() {
     strokeWeight(1);
     for(TableRow row : ghostTab.rows()) {
@@ -260,27 +218,13 @@ class Robot {
     translate(xpos, ypos);
     rotate(phi);
     
-    reachSegment(0, xSensorEnd, ySensorEnd);
-    for(int i=1; i<numSegments; i++) {
-      reachSegment(i, targetX, targetY);
-    }
-    for(int i=xSeg.length-1; i>=1; i--) {
-      positionSegment(i, i-1);  
-    } 
-    for(int i=0; i<xSeg.length; i++) {
-      segment(xSeg[i], ySeg[i], angleSeg[i], xSensorStart, ySensorStart); 
-    }
-    
-    float max = 0;
-    for (int n = 0; n < numSegments; n++) {
-      max += degrees(abs(angleSeg[n]));
-    }
-    //println(max / numSegments);
+    Collision(xpos, ypos, phi);
+    Sensors(sensorEnd.x, sensorEnd.y, sensorEnd.x+przeszkoda.x , sensorEnd.y+przeszkoda.y);
     
     fill(0);
     noStroke();
     rectMode(CENTER);
-    rect(0, 0, xRobot, yRobot);
+    rect(0, 0, robot.x, robot.y);
     stroke(1);
     popMatrix();
   }
