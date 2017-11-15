@@ -176,13 +176,11 @@ class Robot {
     for (int i = 0; i < objectTab.getRowCount(); i++) {
       TableRow row = objectTab.getRow(i);
       
-      if ((row.getInt("x")-200 == (int)round(sensorEnd.x) && (row.getInt("y")-200) == (int)round(sensorEnd.y)) {
-        println("czułka prawa", (row.getInt("x")-(int)xGlobal), (int)round(sensorEnd.x), (row.getInt("y")-(int)yGlobal), (int)round(sensorEnd.y));
+      if ((row.getInt("x")-200 == (int)round(sensorEnd.x + xGlobal - 200) && (row.getInt("y")-200) == (int)round(sensorEnd.y + yGlobal - 200))) {
+        println("czułka prawa", (row.getInt("x")-200), (row.getInt("y")-200), (int)round(sensorEnd.x + xGlobal - 200), (int)round(sensorEnd.y + yGlobal - 200));
       }
-      println("czułka lewa", (row.getInt("x")-(int)xGlobal), (int)sensorEnd.x, (row.getInt("y")-200), (int)sensorEnd.y, xpos, ypos);
-      
-      if (((row.getInt("x")-200) == -(int)round(sensorEnd.x) && ((row.getInt("y")-(int)yGlobal)) == -(int)round(sensorEnd.y))) {
-        println("czułka lewa", (row.getInt("x")-(int)xGlobal), (int)round(sensorEnd.x), (row.getInt("y")-(int)yGlobal), (int)round(sensorEnd.y));
+      if ((row.getInt("x")-200) == (int)round(sensorEnd.x + xGlobal - 200) && (row.getInt("y")-200) == -(int)round(sensorEnd.y + yGlobal - 200)) {
+        println("czułka lewa ", (row.getInt("x")-200), (row.getInt("y")-200), (int)round(sensorEnd.x + xGlobal - 200), -(int)round(sensorEnd.y + yGlobal - 200));
       }
     }
   }
