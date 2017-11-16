@@ -113,11 +113,14 @@ class Robot {
   float ypos;
   float phi;
   
+  PVector rrot;
+  PVector lrot;
+  
   PVector robot, sensorStart, sensorEnd, przeszkoda;
-  int radius;
+  float sensorAngle;;
   
   //Konstruktor
-  Robot(int szerokosc, int dlugosc, float x, float y, float kat, float dl, float pr) {
+  Robot(int szerokosc, int dlugosc, float x, float y, float kat, float dl, float pr) {      //30, 20
     Tp = 1;
     xpos = x;
     ypos = y;
@@ -128,12 +131,10 @@ class Robot {
     
     robot = new PVector(szerokosc, dlugosc);
     sensorStart = new PVector(robot.x/2, robot.y/4);
-    sensorEnd = new PVector(sensorStart.x+15, sensorStart.y+12);
+    sensorEnd = new PVector(sensorStart.x+15, sensorStart.y+12);    //  30, 17
     przeszkoda = new PVector(0, 0);
-    
-    if (szerokosc >= dlugosc) {
-      radius = szerokosc;
-    }
+    rrot = new PVector(0, 0);
+    lrot = new PVector(0, 0);
   }
   
   float Velocity() {
@@ -171,16 +172,29 @@ class Robot {
     phi = phin;
   }
   
-  void Collision(float xGlobal, float yGlobal, float aGlobal) {
+  PVector Rotation(char dir) {
+    PVector rot = new PVector(0,0);
+    if (dir == 'l') {
+      rot.x = (xpos + 30) * cos(phi) + 17 * sin(phi);
+      rot.y = 30 * sin(phi) + (ypos+17) * cos(phi);
+    }
+    else if (dir == 'r') {
+      rot.x = (xpos + 30) * cos(phi) - 17 * sin(phi);
+      rot.y = 30 * sin(phi) + (ypos-17) * cos(phi);
+    }
+    return rot;
+  }
+  
+  void Collision() {
     
     for (int i = 0; i < objectTab.getRowCount(); i++) {
       TableRow row = objectTab.getRow(i);
       
-      if ((row.getInt("x")-200 == (int)round(sensorEnd.x + xGlobal - 200) && (row.getInt("y")-200) == (int)round(sensorEnd.y + yGlobal - 200))) {
-        println("czułka prawa", (row.getInt("x")-200), (row.getInt("y")-200), (int)round(sensorEnd.x + xGlobal - 200), (int)round(sensorEnd.y + yGlobal - 200));
+      if ((row.getInt("x")-200 == (int)round(sensorEnd.x + xpos - 200) && (row.getInt("y")-200) == (int)round(sensorEnd.y + ypos - 200))) {
+        //println("czułka prawa", (row.getInt("x")), (row.getInt("y")), (int)round(sensorEnd.x + xGlobal), (int)round(sensorEnd.y + yGlobal));
       }
-      if ((row.getInt("x")-200) == (int)round(sensorEnd.x + xGlobal - 200) && (row.getInt("y")-200) == -(int)round(sensorEnd.y + yGlobal - 200)) {
-        println("czułka lewa ", (row.getInt("x")-200), (row.getInt("y")-200), (int)round(sensorEnd.x + xGlobal - 200), -(int)round(sensorEnd.y + yGlobal - 200));
+      if ((row.getInt("x")-200) == (int)round(sensorEnd.x + xpos - 200) && (row.getInt("y")-200) == -(int)round(sensorEnd.y + ypos - 200)) {
+        //println("czułka lewa ", (row.getInt("x")-200), (row.getInt("y")-200), (int)round(sensorEnd.x + xGlobal - 200), -(int)round(sensorEnd.y + yGlobal - 200));
       }
     }
   }
@@ -212,11 +226,26 @@ class Robot {
       point(row.getInt("x"), row.getInt("y"));
     }
     
+    rrot = Rotation('r');
+    lrot = Rotation('l');
+    
+    line(10, 10, rrot.x, rrot.y);
+    line(10, 10, lrot.x, lrot.y);
+    
+    for(TableRow row : objectTab.rows()) {
+      if (row.getInt("x") == rrot.x && row.getInt("y") == rrot.y) {
+        println("lewa  :", rrot.x, rrot.y);
+      }
+      if (row.getInt("x") == lrot.x && row.getInt("y") == lrot.y) {
+        println("prawa :", lrot.x, lrot.y);
+      }
+    }
+    
     pushMatrix();
     translate(xpos, ypos);
     rotate(phi);
     
-    Collision(xpos, ypos, phi);
+    Collision();
     Sensors(sensorEnd.x, sensorEnd.y, sensorEnd.x+przeszkoda.x , sensorEnd.y+przeszkoda.y);
     
     fill(0);
