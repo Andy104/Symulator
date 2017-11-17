@@ -89,16 +89,14 @@ void draw() {
   else if (omega[2] >= 5 && omega[2] < 15) { omegaR = 1.1; }
   else if (omega[2] >= 15) { omegaR = 1.2; }
   
-  /*println();
-  println("wL = " + omegaL);
-  println("dirL = " + dirL);
-  println("wR = " + omegaR);
-  println("dirR = " + dirR);*/
-  
   robot.Step(omegaL, omegaR);
   robot.Display();
   
   j++;
+}
+
+void mouseClicked() {
+  println(mouseX, mouseY);
 }
 
 class Robot {
@@ -108,16 +106,29 @@ class Robot {
   float wl;
   float wp;
   float Tp;
-    
+  
+  //Pozycja bezwzględna robota
   float xpos;
   float ypos;
   float phi;
   
+  //Wsółrzędne czułek
+  PVector robot, sensorStart, sensorEnd;
+  
+  //Współrzędne końca czułek po rotacji i translacji robota
   PVector rrot;
   PVector lrot;
   
-  PVector robot, sensorStart, sensorEnd, przeszkoda;
-  float sensorAngle;;
+  //Obliczanie sygnału z czułek
+  float dx1;
+  float dy1;
+  float dx2;
+  float dy2;
+  float dd;
+  float l2;
+  float angle;
+  float angledR;
+  float angledL;
   
   //Konstruktor
   Robot(int szerokosc, int dlugosc, float x, float y, float kat, float dl, float pr) {      //30, 20
@@ -132,7 +143,6 @@ class Robot {
     robot = new PVector(szerokosc, dlugosc);
     sensorStart = new PVector(robot.x/2, robot.y/4);
     sensorEnd = new PVector(sensorStart.x+15, sensorStart.y+12);    //  30, 17
-    przeszkoda = new PVector(0, 0);
     rrot = new PVector(0, 0);
     lrot = new PVector(0, 0);
   }
@@ -175,26 +185,30 @@ class Robot {
   PVector Rotation(char dir) {
     PVector rot = new PVector(0,0);
     if (dir == 'l') {
-      rot.x = (xpos + 30) * cos(phi) + 17 * sin(phi);
-      rot.y = 30 * sin(phi) + (ypos+17) * cos(phi);
+      rot.x = xpos + 30 * cos(phi) + 17 * sin(phi);
+      rot.y = 30 * sin(phi) + ypos - 17 * cos(phi);
     }
     else if (dir == 'r') {
-      rot.x = (xpos + 30) * cos(phi) - 17 * sin(phi);
-      rot.y = 30 * sin(phi) + (ypos-17) * cos(phi);
+      rot.x = xpos + 30 * cos(phi) - 17 * sin(phi);
+      rot.y = 30 * sin(phi) + ypos + 17 * cos(phi);
+    }
+    else {
+      rot.x = xpos;
+      rot.y = ypos;
     }
     return rot;
   }
   
-  void Collision() {
+  void CollisionDetection() {
     
     for (int i = 0; i < objectTab.getRowCount(); i++) {
       TableRow row = objectTab.getRow(i);
       
-      if ((row.getInt("x")-200 == (int)round(sensorEnd.x + xpos - 200) && (row.getInt("y")-200) == (int)round(sensorEnd.y + ypos - 200))) {
-        //println("czułka prawa", (row.getInt("x")), (row.getInt("y")), (int)round(sensorEnd.x + xGlobal), (int)round(sensorEnd.y + yGlobal));
+      if (row.getInt("x") == (int)rrot.x && row.getInt("y") == (int)rrot.y) {
+        println("czułka prawa", row.getInt("x"), row.getInt("y"), (int)rrot.x, (int)rrot.y);
       }
-      if ((row.getInt("x")-200) == (int)round(sensorEnd.x + xpos - 200) && (row.getInt("y")-200) == -(int)round(sensorEnd.y + ypos - 200)) {
-        //println("czułka lewa ", (row.getInt("x")-200), (row.getInt("y")-200), (int)round(sensorEnd.x + xGlobal - 200), -(int)round(sensorEnd.y + yGlobal - 200));
+      if (row.getInt("x") == (int)lrot.x && row.getInt("y") == (int)lrot.y) {
+        println("czułka lewa ", row.getInt("x"), row.getInt("y"), (int)lrot.x, (int)lrot.y);
       }
     }
   }
@@ -204,6 +218,26 @@ class Robot {
                 (int)xStart, (int)yStart, (int)xEnd , (int)yEnd);
     bezier(sensorStart.x, -sensorStart.y, sensorStart.x+20, -sensorStart.y-5, 
                 (int)xStart, -(int)yStart, (int)xEnd , -(int)yEnd);
+    
+    dx1 = sensorStart.x+20 - sensorStart.x;
+    dy1 = sensorStart.y+5 - sensorStart.y;
+    dx2 = xEnd - xStart;
+    dy2 = yEnd - yStart;
+    dd = dx1*dx2-dy1*dy2;
+    l2 = (dx1*dx1+dy1*dy1)*(dx2*dx2+dy2*dy2);
+    angle = acos(dd/sqrt(l2));
+    angledR = degrees(angle);
+    
+    dx1 = sensorStart.x+20 - sensorStart.x;
+    dy1 = -sensorStart.y-5 + sensorStart.y;
+    dx2 = xEnd - xStart;
+    dy2 = -yEnd + yStart;
+    dd = dx1*dx2-dy1*dy2;
+    l2 = (dx1*dx1+dy1*dy1)*(dx2*dx2+dy2*dy2);
+    angle = acos(dd/sqrt(l2));
+    angledL = degrees(angle);
+    
+    println(angledR, angledL);
   }
   
   void Step(float left, float right) {
@@ -229,24 +263,23 @@ class Robot {
     rrot = Rotation('r');
     lrot = Rotation('l');
     
-    line(10, 10, rrot.x, rrot.y);
-    line(10, 10, lrot.x, lrot.y);
+    PVector zmienna1 = new PVector(sensorStart.x -xpos, sensorStart.y -ypos);
     
-    for(TableRow row : objectTab.rows()) {
-      if (row.getInt("x") == rrot.x && row.getInt("y") == rrot.y) {
-        println("lewa  :", rrot.x, rrot.y);
-      }
-      if (row.getInt("x") == lrot.x && row.getInt("y") == lrot.y) {
-        println("prawa :", lrot.x, lrot.y);
-      }
-    }
+    println("prawa: ", degrees(PVector.angleBetween(zmienna1, rrot)));
+    println("lewa : ", degrees(PVector.angleBetween(zmienna1, lrot)));
+    
+    ellipseMode(RADIUS);
+    fill(50);
+    ellipse(rrot.x, rrot.y, 1, 1);
+    ellipse(lrot.x, lrot.y, 1, 1);
+    
+    CollisionDetection();
     
     pushMatrix();
     translate(xpos, ypos);
     rotate(phi);
     
-    Collision();
-    Sensors(sensorEnd.x, sensorEnd.y, sensorEnd.x+przeszkoda.x , sensorEnd.y+przeszkoda.y);
+    Sensors(sensorEnd.x, sensorEnd.y, sensorEnd.x, sensorEnd.y);
     
     fill(0);
     noStroke();
