@@ -68,28 +68,46 @@ void draw() {
     point(row.getInt("x"), row.getInt("y"));
   }  
   
-  if (j <= 100) {signal[0] = 1000; signal[1] = 1300; }
-  else if (j > 100 && j <= 120) {signal[0] = 1800; signal[1] = 1200;}
-  else if (j > 120 && j <= 220) {signal[0] = 1000; signal[1] = 1300; }
-  else if (j > 220 && j <= 250) {signal[0] = 1200; signal[1] = 2000; }
-  else {j = 0;}
+  signal = robot.Signals();
   
   //Odpowiedź sieci na obliczony sygnał
-  omega = siec.FeedForward(signal);  
+  omega = siec.FeedForward(signal);
+  omega[0] /= 10;
+  omega[1] /= 10;
   
-  //Przeliczenie wartości PWM na prędkość
-  if (omega[1] >= -0.5) { omega[0] = abs(omega[0]); }
-  if (omega[3] >= -0.5) { omega[2] = abs(omega[2]); }
+  println(omega[0], omega[1]);
+
   
-  if (omega[0] < 5) { omegaL = 1.0; }
-  else if (omega[0] >= 5 && omega[0] < 15) { omegaL = 1.1; }
-  else if (omega[0] >= 15) { omegaL = 1.2; }
+  if (omega[2] >= 0) {
+    if (omega[0] < 1.5) { omega[0] = 1.2; }
+    else if (omega[0] >= 1.5 && omega[0] < 2.5) { omega[0] = 1.4; }
+    else if (omega[0] >= 2.5 && omega[0] < 3.5) { omega[0] = 1.6; }
+    else if (omega[0] >= 3.5 && omega[0] < 4.5) { omega[0] = 1.8; }
+    else if (omega[0] >= 4.5) { omega[0] = 2; }
+  } else if (omega[2] < 0) {
+    if (omega[0] < 1.5) { omega[0] = -1.2; }
+    else if (omega[0] >= 1.5 && omega[0] < 2.5) { omega[0] = -1.4; }
+    else if (omega[0] >= 2.5 && omega[0] < 3.5) { omega[0] = -1.6; }
+    else if (omega[0] >= 3.5 && omega[0] < 4.5) { omega[0] = -1.8; }
+    else if (omega[0] >= 4.5) { omega[0] = -2; }
+  }
+  if (omega[3] >= 0) {
+    if (omega[1] < 1.5) { omega[1] = 1.2; }
+    else if (omega[1] >= 1.5 && omega[1] < 2.5) { omega[1] = 1.4; }
+    else if (omega[1] >= 2.5 && omega[1] < 3.5) { omega[1] = 1.6; }
+    else if (omega[1] >= 3.5 && omega[1] < 4.5) { omega[1] = 1.8; }
+    else if (omega[1] >= 4.5) { omega[1] = 2; }
+  } else if (omega[3] < 0) {
+    if (omega[1] < 1.5) { omega[1] = -1.2; }
+    else if (omega[1] >= 1.5 && omega[1] < 2.5) { omega[1] = -1.4; }
+    else if (omega[1] >= 2.5 && omega[1] < 3.5) { omega[1] = -1.6; }
+    else if (omega[1] >= 3.5 && omega[1] < 4.5) { omega[1] = -1.8; }
+    else if (omega[1] >= 4.5) { omega[1] = -2; }
+  }
   
-  if (omega[2] < 5) { omegaR = 1.0; }
-  else if (omega[2] >= 5 && omega[2] < 15) { omegaR = 1.1; }
-  else if (omega[2] >= 15) { omegaR = 1.2; }
+  println(omega[0], omega[1]);
   
-  robot.Step(omegaL, omegaR);
+  robot.Step(omega);
   robot.Display();
   
   j++;
@@ -101,19 +119,19 @@ void mouseClicked() {
 
 class Robot {
   //Robot
-  float d;  
+  float dl;  
   float r;
   float wl;
   float wp;
   float Tp;
   
   //Pozycja bezwzględna robota
-  float xpos;
-  float ypos;
+  PVector position;
   float phi;
   
   //Wsółrzędne czułek
-  PVector robot, sensorStart, sensorEnd;
+  PVector robot;
+  PVector a, b, c, d;
   
   //Współrzędne końca czułek po rotacji i translacji robota
   PVector rrot;
@@ -127,22 +145,21 @@ class Robot {
   float dd;
   float l2;
   float angle;
-  float angledR;
-  float angledL;
   
   //Konstruktor
   Robot(int szerokosc, int dlugosc, float x, float y, float kat, float dl, float pr) {      //30, 20
     Tp = 1;
-    xpos = x;
-    ypos = y;
+    position = new PVector(x, y);
     phi = kat;
     
-    d = dl;
-    r = pr;
+    this.dl = dl;
+    this.r = pr;
     
-    robot = new PVector(szerokosc, dlugosc);
-    sensorStart = new PVector(robot.x/2, robot.y/4);
-    sensorEnd = new PVector(sensorStart.x+15, sensorStart.y+12);    //  30, 17
+    robot = new PVector(szerokosc, dlugosc);    //wymiary robota
+    a = new PVector(robot.x/2, robot.y/4);      //początek czułki - początek pierwszego odcinka
+    b = new PVector(a.x+8, a.y+2);              //koniec pierwszego odcinka
+    c = new PVector(a.x+15, a.y+2);             //początek drugiego odcinka
+    d = new PVector(a.x+20, a.y+12);            //koniec czułki(30, 17) - koniec drugiego odcinka
     rrot = new PVector(0, 0);
     lrot = new PVector(0, 0);
   }
@@ -153,7 +170,7 @@ class Robot {
   }
   
   float Omega() {
-    float omg = (wp - wl) * r / d;
+    float omg = (wp - wl) * r / dl;
     return omg;
   }
   
@@ -168,13 +185,13 @@ class Robot {
   }
   
   void Xn() {
-    float xn = xpos + Tp * Vxn();
-    xpos = xn;
+    float xn = position.x + Tp * Vxn();
+    position.x = xn;
   }
   
   void Yn() {
-    float yn = ypos + Tp * Vyn();
-    ypos = yn;
+    float yn = position.y + Tp * Vyn();
+    position.y = yn;
   }
   
   void Phin() {
@@ -182,75 +199,78 @@ class Robot {
     phi = phin;
   }
   
-  PVector Rotation(char dir) {
+  PVector Rotation(PVector point, char dir) {
     PVector rot = new PVector(0,0);
     if (dir == 'l') {
-      rot.x = xpos + 30 * cos(phi) + 17 * sin(phi);
-      rot.y = 30 * sin(phi) + ypos - 17 * cos(phi);
+      rot.x = point.x + d.x * cos(phi) + d.y * sin(phi);
+      rot.y = d.x * sin(phi) + point.y - d.y * cos(phi);
     }
     else if (dir == 'r') {
-      rot.x = xpos + 30 * cos(phi) - 17 * sin(phi);
-      rot.y = 30 * sin(phi) + ypos + 17 * cos(phi);
-    }
-    else {
-      rot.x = xpos;
-      rot.y = ypos;
+      rot.x = point.x + d.x * cos(phi) - d.y * sin(phi);
+      rot.y = d.x * sin(phi) + point.y + d.y * cos(phi);
     }
     return rot;
   }
   
-  void CollisionDetection() {
-    
+  void CollisionDetection(PVector posL, PVector posR) {
     for (int i = 0; i < objectTab.getRowCount(); i++) {
       TableRow row = objectTab.getRow(i);
       
-      if (row.getInt("x") == (int)rrot.x && row.getInt("y") == (int)rrot.y) {
-        println("czułka prawa", row.getInt("x"), row.getInt("y"), (int)rrot.x, (int)rrot.y);
+      if (row.getInt("x") == (int)posR.x && row.getInt("y") == (int)posR.y) {
+        println("czułka prawa", row.getInt("x"), row.getInt("y"), (int)posR.x, (int)posR.y);
       }
-      if (row.getInt("x") == (int)lrot.x && row.getInt("y") == (int)lrot.y) {
-        println("czułka lewa ", row.getInt("x"), row.getInt("y"), (int)lrot.x, (int)lrot.y);
+      if (row.getInt("x") == (int)posL.x && row.getInt("y") == (int)posL.y) {
+        println("czułka lewa ", row.getInt("x"), row.getInt("y"), (int)posL.x, (int)posL.y);
       }
     }
   }
   
-  void Sensors(float xStart, float yStart, float xEnd, float yEnd) {
-    bezier(sensorStart.x, sensorStart.y, sensorStart.x+20, sensorStart.y+5, 
-                (int)xStart, (int)yStart, (int)xEnd , (int)yEnd);
-    bezier(sensorStart.x, -sensorStart.y, sensorStart.x+20, -sensorStart.y-5, 
-                (int)xStart, -(int)yStart, (int)xEnd , -(int)yEnd);
+  void Sensors() {
+    noFill();
+    bezier(a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y);
+    bezier(a.x, -a.y, b.x, -b.y, c.x, -c.y, d.x, -d.y);
     
-    dx1 = sensorStart.x+20 - sensorStart.x;
-    dy1 = sensorStart.y+5 - sensorStart.y;
-    dx2 = xEnd - xStart;
-    dy2 = yEnd - yStart;
-    dd = dx1*dx2-dy1*dy2;
-    l2 = (dx1*dx1+dy1*dy1)*(dx2*dx2+dy2*dy2);
-    angle = acos(dd/sqrt(l2));
-    angledR = degrees(angle);
-    
-    dx1 = sensorStart.x+20 - sensorStart.x;
-    dy1 = -sensorStart.y-5 + sensorStart.y;
-    dx2 = xEnd - xStart;
-    dy2 = -yEnd + yStart;
-    dd = dx1*dx2-dy1*dy2;
-    l2 = (dx1*dx1+dy1*dy1)*(dx2*dx2+dy2*dy2);
-    angle = acos(dd/sqrt(l2));
-    angledL = degrees(angle);
-    
-    println(angledR, angledL);
+    //println(a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y);
   }
   
-  void Step(float left, float right) {
-    wl = left;
-    wp = right;
+  float[] Signals() {
+    float sig[] = new float[2];
+    
+    CollisionDetection(lrot, rrot);
+    
+    dx1 = b.x - a.x;
+    dy1 = b.y - a.y;
+    dx2 = d.x - c.x;
+    dy2 = d.y - c.y;
+    dd = dx1*dx2-dy1*dy2;
+    l2 = (dx1*dx1+dy1*dy1)*(dx2*dx2+dy2*dy2);
+    angle = acos(dd/sqrt(l2));
+    sig[1] = (1300 - 600)*(degrees(angle) - 120) / (75 - 120) + 600;
+
+    dx1 = b.x - a.x;
+    dy1 = -b.y + a.y;
+    dx2 = d.x - c.x;
+    dy2 = -d.y + c.y;
+    dd = dx1*dx2-dy1*dy2;
+    l2 = (dx1*dx1+dy1*dy1)*(dx2*dx2+dy2*dy2);
+    angle = acos(dd/sqrt(l2));
+    sig[0] = (1500 - 800)*(degrees(angle) - 120) / (75 - 120) + 800;
+
+    println("lewe: ", sig[0], "prawe:", sig[1]);
+    return sig;
+  }
+  
+  void Step(float[] wheel) {
+    wl = wheel[0];
+    wp = wheel[1];
 
     Phin();
     Xn();
     Yn();
     
     newRow = newTab.addRow();
-    newRow.setFloat("x", xpos);
-    newRow.setFloat("y", ypos);
+    newRow.setFloat("x", position.x);
+    newRow.setFloat("y", position.y);
     saveTable(newTab, "ghost.tsv");
   }
   
@@ -260,26 +280,22 @@ class Robot {
       point(row.getInt("x"), row.getInt("y"));
     }
     
-    rrot = Rotation('r');
-    lrot = Rotation('l');
+    rrot = Rotation(position, 'r');
     
-    PVector zmienna1 = new PVector(sensorStart.x -xpos, sensorStart.y -ypos);
-    
-    println("prawa: ", degrees(PVector.angleBetween(zmienna1, rrot)));
-    println("lewa : ", degrees(PVector.angleBetween(zmienna1, lrot)));
+    d.x = mouseX - 200;
+    d.y = mouseY - 200;
+    lrot = Rotation(position, 'l');
     
     ellipseMode(RADIUS);
     fill(50);
     ellipse(rrot.x, rrot.y, 1, 1);
     ellipse(lrot.x, lrot.y, 1, 1);
     
-    CollisionDetection();
-    
     pushMatrix();
-    translate(xpos, ypos);
+    translate(position.x, position.y);
     rotate(phi);
     
-    Sensors(sensorEnd.x, sensorEnd.y, sensorEnd.x, sensorEnd.y);
+    Sensors();
     
     fill(0);
     noStroke();
@@ -300,20 +316,20 @@ class Siec {
   int outputLayer;
   
   float inputWeight[][] = {
-    {-2.2262353443724119, 0.240911501250247, -7.771985610902895, -0.135920811990952, -10.958964644094142, 38.361989501327564, 19.054150135051130, 6.588522811927432}, 
-    {-2.3124582332364492, 11.974140101969004, 41.407328218704606, 12.065838399079153, 5.832571029618378, 1.571468312227123, -31.209524873306574, -6.167941966749249}, 
-    {6.1316912347136343, 11.81473315018301, 14.800956804396813, 11.589835002168435, 6.4383831481577252, 19.483460284520937, 15.99047038410459, -2.0871817576418819}
+  { -62.700579376402330, 58.770106555361350, 0.028744987797917, -2.216777908752713, -8.209967103803248, 0.457904520577887, 0.774210319199532, 8.406062313348830 },
+  { 1.016086908218715, -15.282513299116458, 0.185173506110019, 10.284891268760440, -49.137130037744640, -2.890990735994227, -0.034431136269521, -0.042125806097272 },
+  { 44.062027741629320, -49.003161622440985, -0.505934070982419, -6.579267943511259, 14.386299668964696, -1.499808903544442, 1.240743740277368, 9.638293398056357 }
   };
   float hiddenWeight[][] = {
-    { 0.0332948105995429, 1.03118922991245, -0.0563395212141743, 0.0838689487760870 },
-    { -4.14283514896582, -0.0680578448082310, -0.046413382601782, -0.068053620706070 },
-    { 0.004308689913784, 0.007347666907454, 0.506020624454071, 0.007348054653341 },
-    { 4.313373924496300, 0.063182512909129, 0.042335875246172, 0.063177555653699 },
-    { -0.965116013113119, -0.0005670790341832, -0.001106585549589, -0.000565684212302 },
-    { -0.004755527827990, -1.024101049166465, -0.512340546554027, -1.024149381049142 },
-    { 0.000065709634845, -0.000980268322908, -0.502208161178029, -0.000978254757323 },
-    { 1.003663346325185, 1.040947251050357, 0.523370722488140, 1.040995335965606 },
-    { 0.755945612986882, -0.017336471473698, 0.068061150656458, 0.929980775367793 }
+  { 0.261971039520792, -0.121840234804018, -0.353319653902830, -0.353319653902825 },
+  { 0.045581011346906, -0.173352847899195, 0.654044426946931, 0.654044426946930 },
+  { 1.606763811025532, -3.915080122788438, -1.723955896289036, -1.723955896288743 },
+  { -0.189457859799339, -0.014973885739545, 0.332242276190160, 0.332242276190153 },
+  { -0.035275422600605, 0.157692863056024, -0.777186165166509, -0.777186165166502 },
+  { 0.157126477152867, 0.453813757438312, -0.175297103205640, -0.175297103205618 },
+  { -3.957230648337938, 0.023763640156817, 0.325867925846360, 0.325867925846363 },
+  { 2.086084580232911, -0.177834075734740, 0.155045465286736, 0.155045465286596 },
+  { 1.560455402833735, -1.707057678367934, -0.188330772081619, -0.188330772081334 }
   };
   
   float inputNeuron[];
@@ -346,10 +362,9 @@ class Siec {
     //println("InputVals[1] = " + InputVals[1] );
     
     //println("\nInputLayer: ", inputLayer);
-    for(x = 0; x < inputLayer; x++) {
-      inputNeuron[x] = ((1 + 1) * (InputVals[x] - 1000) / (4000 - 1000)) - 1;
-      //println("Neuron " + x + " = " + inputNeuron[x]);
-    }
+    inputNeuron[0] = ((1 + 1) * (InputVals[0] - 800) / (1500 - 800)) - 1;
+    inputNeuron[1] = ((1 + 1) * (InputVals[1] - 600) / (1300 - 600)) - 1;
+    //println("Neuron " + x + " = " + inputNeuron[x]);
     
     //println("\nHiddenLayer: ", hiddenLayer);
     for(y = 0; y < hiddenLayer; y++) {
@@ -373,13 +388,13 @@ class Siec {
       //println("Neuron " + z + " = " + outputNeuron[z]);
       
       if (z == 0) {
-        OutputVals[z] = 20 * (outputNeuron[z] + 1) / (1 + 1);
+        OutputVals[z] = 40 * (outputNeuron[z] + 1) / 2 + 10;
       }
       if (z == 1) {
-        OutputVals[z] = 2 * (outputNeuron[z] + 1) / 2 - 1;
+        OutputVals[z] = 40 * (outputNeuron[z] + 1) / 2 + 10;
       }
       if (z == 2) {
-        OutputVals[z] = 20 * (outputNeuron[z] + 1) / (1 + 1);
+        OutputVals[z] = 2 * (outputNeuron[z] + 1) / 2 - 1;
       }
       if (z == 3) {
         OutputVals[z] = 2 * (outputNeuron[z] + 1) / 2 - 1;
