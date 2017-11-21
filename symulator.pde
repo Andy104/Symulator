@@ -62,12 +62,11 @@ void draw() {
   objectX = new int[objectTab.getRowCount()];
   objectY = new int[objectTab.getRowCount()];
   
-  /***  Sygnał czułek  ***/
-  //  Wczytanie położenia przeszkód
   for (TableRow row : objectTab.rows()) {
     point(row.getInt("x"), row.getInt("y"));
-  }  
+  }
   
+  /***  Sygnał czułek  ***/
   signal = robot.Signals();
   
   //Odpowiedź sieci na obliczony sygnał
@@ -75,8 +74,7 @@ void draw() {
   omega[0] /= 10;
   omega[1] /= 10;
   
-  println(omega[0], omega[1]);
-
+  //println(omega[0], omega[1]);
   
   if (omega[2] >= 0) {
     if (omega[0] < 1.5) { omega[0] = 1.2; }
@@ -105,7 +103,7 @@ void draw() {
     else if (omega[1] >= 4.5) { omega[1] = -2; }
   }
   
-  println(omega[0], omega[1]);
+  //println(omega[0], omega[1]);
   
   robot.Step(omega);
   robot.Display();
@@ -131,7 +129,7 @@ class Robot {
   
   //Wsółrzędne czułek
   PVector robot;
-  PVector a, b, c, d;
+  PVector a, b, cL, dL, cR, dR;
   
   //Współrzędne końca czułek po rotacji i translacji robota
   PVector rrot;
@@ -158,10 +156,12 @@ class Robot {
     robot = new PVector(szerokosc, dlugosc);    //wymiary robota
     a = new PVector(robot.x/2, robot.y/4);      //początek czułki - początek pierwszego odcinka
     b = new PVector(a.x+8, a.y+2);              //koniec pierwszego odcinka
-    c = new PVector(a.x+15, a.y+2);             //początek drugiego odcinka
-    d = new PVector(a.x+20, a.y+12);            //koniec czułki(30, 17) - koniec drugiego odcinka
+    cL = new PVector(a.x+15, a.y+2);             //początek drugiego odcinka
+    dL = new PVector(a.x+20, a.y+12);            //koniec czułki(30, 17) - koniec drugiego odcinka
+    cR = new PVector(a.x+15, a.y+2);             //
+    dR = new PVector(a.x+20, a.y+12);            //
     rrot = new PVector(0, 0);
-    lrot = new PVector(0, 0);
+    lrot = new PVector(0, 0);    
   }
   
   float Velocity() {
@@ -202,12 +202,12 @@ class Robot {
   PVector Rotation(PVector point, char dir) {
     PVector rot = new PVector(0,0);
     if (dir == 'l') {
-      rot.x = point.x + d.x * cos(phi) + d.y * sin(phi);
-      rot.y = d.x * sin(phi) + point.y - d.y * cos(phi);
+      rot.x = point.x + dL.x * cos(phi) + dL.y * sin(phi);
+      rot.y = dL.x * sin(phi) + point.y - dL.y * cos(phi);
     }
     else if (dir == 'r') {
-      rot.x = point.x + d.x * cos(phi) - d.y * sin(phi);
-      rot.y = d.x * sin(phi) + point.y + d.y * cos(phi);
+      rot.x = point.x + dR.x * cos(phi) - dR.y * sin(phi);
+      rot.y = dR.x * sin(phi) + point.y + dR.y * cos(phi);
     }
     return rot;
   }
@@ -216,21 +216,39 @@ class Robot {
     for (int i = 0; i < objectTab.getRowCount(); i++) {
       TableRow row = objectTab.getRow(i);
       
-      if (row.getInt("x") == (int)posR.x && row.getInt("y") == (int)posR.y) {
-        println("czułka prawa", row.getInt("x"), row.getInt("y"), (int)posR.x, (int)posR.y);
+      if (((int)posR.x <= row.getInt("x")) && ((int)posR.x >= row.getInt("x")-10) && ((int)posR.y <= row.getInt("y")) && ((int)posR.y >= row.getInt("y")-10)) {
+        if (((int)posR.x <= row.getInt("x")) && ((int)posR.x >= row.getInt("x")-10)) {
+          dR.x = row.getInt("x")-position.x;
+          println("dr.x =", dR.x, row.getInt("x"), position.x);
+        } else {
+          dR.x = a.x + 20;
+        }
+        if (((int)posR.y <= row.getInt("y")) && ((int)posR.y >= row.getInt("y")-10)) {
+          dR.y = row.getInt("y")-position.y;
+        } else {
+          dR.y = a.y+12;
+        }
       }
-      if (row.getInt("x") == (int)posL.x && row.getInt("y") == (int)posL.y) {
-        println("czułka lewa ", row.getInt("x"), row.getInt("y"), (int)posL.x, (int)posL.y);
+      
+      if (((int)posL.x <= row.getInt("x")) && ((int)posL.x >= row.getInt("x")-10) && ((int)posL.y <= row.getInt("y")) && ((int)posL.y >= row.getInt("y")-10)) {
+        if (((int)posL.x <= row.getInt("x")) && ((int)posL.x >= row.getInt("x")-10)) {
+          dL.x = row.getInt("x")-position.x;
+        } else {
+          dL.x = a.x+20;
+        }
+        if (((int)posL.y <= row.getInt("y")) && ((int)posL.y >= row.getInt("y")-10)) {
+          dL.y = row.getInt("y")-position.y;
+        } else {
+          dL.y = a.y+12;
+        }
       }
     }
   }
   
   void Sensors() {
     noFill();
-    bezier(a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y);
-    bezier(a.x, -a.y, b.x, -b.y, c.x, -c.y, d.x, -d.y);
-    
-    //println(a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y);
+    bezier(a.x, -a.y, b.x, -b.y, cL.x, -cL.y, dL.x, -dL.y);
+    bezier(a.x, a.y, b.x, b.y, cR.x, cR.y, dR.x, dR.y);
   }
   
   float[] Signals() {
@@ -240,8 +258,8 @@ class Robot {
     
     dx1 = b.x - a.x;
     dy1 = b.y - a.y;
-    dx2 = d.x - c.x;
-    dy2 = d.y - c.y;
+    dx2 = dL.x - cL.x;
+    dy2 = dL.y - cL.y;
     dd = dx1*dx2-dy1*dy2;
     l2 = (dx1*dx1+dy1*dy1)*(dx2*dx2+dy2*dy2);
     angle = acos(dd/sqrt(l2));
@@ -249,14 +267,14 @@ class Robot {
 
     dx1 = b.x - a.x;
     dy1 = -b.y + a.y;
-    dx2 = d.x - c.x;
-    dy2 = -d.y + c.y;
+    dx2 = dR.x - cR.x;
+    dy2 = -dR.y + cR.y;
     dd = dx1*dx2-dy1*dy2;
     l2 = (dx1*dx1+dy1*dy1)*(dx2*dx2+dy2*dy2);
     angle = acos(dd/sqrt(l2));
     sig[0] = (1500 - 800)*(degrees(angle) - 120) / (75 - 120) + 800;
 
-    println("lewe: ", sig[0], "prawe:", sig[1]);
+    //println("lewe: ", sig[0], "prawe:", sig[1]);
     return sig;
   }
   
@@ -281,16 +299,13 @@ class Robot {
     }
     
     rrot = Rotation(position, 'r');
-    
-    d.x = mouseX - 200;
-    d.y = mouseY - 200;
     lrot = Rotation(position, 'l');
     
     ellipseMode(RADIUS);
     fill(50);
     ellipse(rrot.x, rrot.y, 1, 1);
     ellipse(lrot.x, lrot.y, 1, 1);
-    
+        
     pushMatrix();
     translate(position.x, position.y);
     rotate(phi);
