@@ -40,7 +40,7 @@ void setup() {
   strokeWeight(1);
   
   //Symulacja
-  robot = new Robot(30, 20, height/2+100, width/2+50, -2.2, 0.1, 0.05);
+  robot = new Robot(30, 20, height/2+100, width/2+50, 1, 0.1, 0.05);
   siec = new Siec(2, 8, 4);
 }
 
@@ -78,34 +78,34 @@ void draw() {
   //println(omega[0], omega[1]);
   
   if (omega[2] >= 0) {
-    if (omega[0] < 1.5) { omega[0] = 1.2; }
+    if (omega[0] < 1.5) { omega[0] = 1.5; }
     else if (omega[0] >= 1.5 && omega[0] < 2.5) { omega[0] = 2; }
     else if (omega[0] >= 2.5 && omega[0] < 3.5) { omega[0] = 3; }
     else if (omega[0] >= 3.5 && omega[0] < 4.5) { omega[0] = 4; }
-    else if (omega[0] >= 4.5) { omega[0] = 2; }
+    else if (omega[0] >= 4.5) { omega[0] = 5; }
   } else if (omega[2] < 0) {
-    if (omega[0] < 1.5) { omega[0] = -1.2; }
+    if (omega[0] < 1.5) { omega[0] = -1.5; }
     else if (omega[0] >= 1.5 && omega[0] < 2.5) { omega[0] = -2; }
     else if (omega[0] >= 2.5 && omega[0] < 3.5) { omega[0] = -3; }
     else if (omega[0] >= 3.5 && omega[0] < 4.5) { omega[0] = -4; }
-    else if (omega[0] >= 4.5) { omega[0] = -2; }
+    else if (omega[0] >= 4.5) { omega[0] = -5; }
   }
   if (omega[3] >= 0) {
-    if (omega[1] < 1.5) { omega[1] = 1.2; }
+    if (omega[1] < 1.5) { omega[1] = 1.5; }
     else if (omega[1] >= 1.5 && omega[1] < 2.5) { omega[1] = 2; }
     else if (omega[1] >= 2.5 && omega[1] < 3.5) { omega[1] = 3; }
     else if (omega[1] >= 3.5 && omega[1] < 4.5) { omega[1] = 4; }
-    else if (omega[1] >= 4.5) { omega[1] = 2; }
+    else if (omega[1] >= 4.5) { omega[1] = 5; }
   } else if (omega[3] < 0) {
-    if (omega[1] < 1.5) { omega[1] = -1.2; }
+    if (omega[1] < 1.5) { omega[1] = -1.5; }
     else if (omega[1] >= 1.5 && omega[1] < 2.5) { omega[1] = -2; }
     else if (omega[1] >= 2.5 && omega[1] < 3.5) { omega[1] = -3; }
     else if (omega[1] >= 3.5 && omega[1] < 4.5) { omega[1] = -4; }
-    else if (omega[1] >= 4.5) { omega[1] = -2; }
+    else if (omega[1] >= 4.5) { omega[1] = -25; }
   }
   
-  //omega[0] /= 5;
-  //omega[1] /= 5;
+  omega[0] /= 10;
+  omega[1] /= 10;
   //println(omega[0], omega[1]);
   
   robot.Step(omega);
@@ -230,17 +230,17 @@ class Robot {
       TableRow row = objectTab.getRow(i);
       
       if (dir == 'r') {
-        if ((int)pos.x+5 >= row.getInt("x") &&(int)pos.x -5 <= row.getInt("x") && (int)pos.y+5 >= row.getInt("y") && (int)pos.y-5 <= row.getInt("y")) {
-          col.x = col.x -1;//sqrt(row.getInt("x")*row.getInt("x") + row.getInt("y")*row.getInt("y")) -  pos.mag() - 1;
-          col.y = col.y +1;//(int)(pos.y - position.y);
-          println("prawa :", pos.x - position.x, pos.y - position.y);
+        if ((int)pos.x+2 >= row.getInt("x") &&(int)pos.x -2 <= row.getInt("x") && (int)pos.y+2 >= row.getInt("y") && (int)pos.y-2 <= row.getInt("y")) {
+          col.x = col.x-0.4;
+          col.y = col.y;
+    println(dir, (int)pos.x, (int)pos.y, col.x, col.y);
         }
       }
       if (dir == 'l') {
-        if ((int)pos.x+5 >= row.getInt("x") &&(int)pos.x -5 <= row.getInt("x") && (int)pos.y+5 >= row.getInt("y") && (int)pos.y-5 <= row.getInt("y")) {
-          col.x = col.x-1;//(int)(abs(pos.x - position.x));
-          col.y = col.y-1;//(int)(abs(pos.y - position.y));
-          //println("lewa :", col.x, -col.y);
+        if ((int)pos.x+3 >= row.getInt("x") &&(int)pos.x -2 <= row.getInt("x") && (int)pos.y+2 >= row.getInt("y") && (int)pos.y-2 <= row.getInt("y")) {
+          col.x = col.x-0.4;
+          col.y = col.y;
+    println(dir, (int)pos.x, (int)pos.y, col.x, col.y);
         }
       }
     }
