@@ -40,7 +40,7 @@ void setup() {
   strokeWeight(1);
   
   //Symulacja
-  robot = new Robot(30, 20, height/2-80, width/2-80, -2, 0.1, 0.05);
+  robot = new Robot(30, 20, /*height/2+*/140, /*width/2+*/280, 2, 0.1, 0.05);
   siec = new Siec(2, 8, 4);
 }
 
@@ -79,27 +79,39 @@ void draw() {
   //println(omega[0], omega[1]);
   
   if (omega[2] >= 0) {
-    if (omega[0] < 3.5) { omega[0] = 3; }
-    else if (omega[0] >= 3.5 && omega[0] < 4.5) { omega[0] = 4; }
-    else if (omega[0] >= 4.5) { omega[0] = 5; }
+    if (omega[0] < 35) { omega[0] = 30; }
+    else if (omega[0] >= 35 && omega[0] < 45) { omega[0] = 40; }
+    else if (omega[0] >= 45 && omega[0] < 55) { omega[0] = 50; }
+    else if (omega[0] >= 55 && omega[0] < 65) { omega[0] = 60; }
+    else if (omega[0] >= 65) { omega[0] = 70; }
   } else if (omega[2] < 0) {
-    if (omega[0] < 3.5) { omega[0] = -3; }
-    else if (omega[0] >= 3.5 && omega[0] < 4.5) { omega[0] = -4; }
-    else if (omega[0] >= 4.5) { omega[0] = -5; }
+    if (omega[0] < 35) { omega[0] = -30; }
+    else if (omega[0] >= 35 && omega[0] < 45) { omega[0] = -40; }
+    else if (omega[0] >= 45 && omega[0] < 55) { omega[0] = -50; }
+    else if (omega[0] >= 55 && omega[0] < 65) { omega[0] = -60; }
+    else if (omega[0] >= 65) { omega[0] = -70; }
   }
   if (omega[3] >= 0) {
-    if (omega[1] < 3.5) { omega[1] = 3; }
-    else if (omega[1] >= 3.5 && omega[1] < 4.5) { omega[1] = 4; }
-    else if (omega[1] >= 4.5) { omega[1] = 5; }
+    if (omega[1] < 35) { omega[1] = 30; }
+    else if (omega[1] >= 35 && omega[1] < 45) { omega[1] = 40; }
+    else if (omega[1] >= 45 && omega[1] < 55) { omega[1] = 50; }
+    else if (omega[1] >= 55 && omega[1] < 65) { omega[1] = 60; }
+    else if (omega[1] >= 65) { omega[1] = 70; }
   } else if (omega[3] < 0) {
-    if (omega[1] < 3.5) { omega[1] = -3; }
-    else if (omega[1] >= 3.5 && omega[1] < 4.5) { omega[1] = -4; }
-    else if (omega[1] >= 4.5) { omega[1] = -5; }
+    if (omega[1] < 35) { omega[1] = -30; }
+    else if (omega[1] >= 35 && omega[1] < 45) { omega[1] = -40; }
+    else if (omega[1] >= 45 && omega[1] < 55) { omega[1] = -50; }
+    else if (omega[1] >= 55 && omega[1] < 65) { omega[1] = -60; }
+    else if (omega[1] >= 65) { omega[1] = -70; }
   }
   
-  omega[0] /= 4;
-  omega[1] /= 4;
+  omega[0] /= 40;
+  omega[1] /= 40;
   //println(omega[0], omega[1]);
+  
+  if (omega[2]<0 && omega[3]<0) {
+    robot.Step(omega);
+  }
   
   robot.Step(omega);
   robot.Display();
@@ -223,14 +235,14 @@ class Robot {
       TableRow row = objectTab.getRow(i);
       
       if (dir == 'r') {
-        if ((int)pos.x +3 >= row.getInt("x") &&(int)pos.x -3 <= row.getInt("x") && (int)pos.y +3 >= row.getInt("y") && (int)pos.y -3 <= row.getInt("y")) {
-          col.x = col.x-0.4;
+        if ((int)pos.x +5 >= row.getInt("x") &&(int)pos.x -5 <= row.getInt("x") && (int)pos.y +5 >= row.getInt("y") && (int)pos.y -5 <= row.getInt("y")) {
+          col.x = col.x-0.15;
           col.y = col.y;
         }
       }
       if (dir == 'l') {
-        if ((int)pos.x +3 >= row.getInt("x") &&(int)pos.x -3 <= row.getInt("x") && (int)pos.y +3 >= row.getInt("y") && (int)pos.y -3 <= row.getInt("y")) {
-          col.x = col.x-0.4;
+        if ((int)pos.x +5 >= row.getInt("x") &&(int)pos.x -5 <= row.getInt("x") && (int)pos.y +5 >= row.getInt("y") && (int)pos.y -5 <= row.getInt("y")) {
+          col.x = col.x-0.15;
           col.y = col.y;
         }
       }
@@ -241,7 +253,7 @@ class Robot {
   void GenerateSignals() {
     dR = CollisionDetection(rrot, 'r');
     dL = CollisionDetection(lrot, 'l');
-    //println("GenerateSignal", dR.x, dR.y, dL.x, -dL.y);
+    println("GenerateSignal", dR.x, dR.y, dL.x, -dL.y);
     
     d1.x = b.x - a.x;
     d1.y = -b.y + a.y;
@@ -250,7 +262,7 @@ class Robot {
     dd = d1.x*d2.x-d1.y*d2.y;
     l2 = (d1.x*d1.x+d1.y*d1.y)*(d2.x*d2.x+d2.y*d2.y);
     angle = acos(dd/sqrt(l2));
-    signal[1] = (1900 - 1500)*(degrees(angle) - 120) / (75 - 120) + 1500 + random(-50.0);
+    signal[1] = (1900 - 1000)*(degrees(angle) - 120) / (75 - 120) + 1000;// + random(-49.0);
 
     d1.x = b.x - a.x;
     d1.y = -b.y + a.y;
@@ -259,7 +271,7 @@ class Robot {
     dd = d1.x*d2.x-d1.y*d2.y;
     l2 = (d1.x*d1.x+d1.y*d1.y)*(d2.x*d2.x+d2.y*d2.y);
     angle = acos(dd/sqrt(l2));
-    signal[0] = (1900 - 1500)*(degrees(angle) - 120) / (75 - 120) + 1500 + random(-50.0);
+    signal[0] = (1900 - 1000)*(degrees(angle) - 120) / (75 - 120) + 1000;// + random(-49.0);
 
     println("lewe: ", signal[0], "prawe:", signal[1]);
   }
@@ -313,20 +325,20 @@ class Siec {
   int outputLayer;
   
   float inputWeight[][] = {
-  { -0.454512109914736, -2.382215605562247, 6.090167014179015, 5.700755711897299, 5.090570236291049, -4.084955404002233, -5.620588191449418, 2.611526654433665 },
-  { 8.375535749878196, 2.893159533461307, 0.673550129764684, 0.261290023014269, 0.796853049382166, 1.147367347637792, -0.614049002479692, 0.842932256950842 },
-  { -0.226100670019585, 0.805667539607018, -0.755128347652538, -0.635627631814640, 0.099757930995300, -0.730011070949842, -3.813486106911570, 2.364019101002252 }
+  { 3.97681621216933, -3.43496298788826, 0.518062070134451, 0.821710432630776, 0.714825677501889, 3.13587278595063, -1.13347989568598, 2.75103671091913 },
+  { -1.12567585837059, -5.60379820912743, -1.67260335217006, -0.590835467054184, 2.04527923010639, 2.53399406174777, -4.57620518303079, 1.37198169402332 },
+  { -3.51380189962795, 5.82953064721858, 0.136053628312775, 0.298490163292096, -1.17434690710991, 1.96714436336079, -1.62541860897994, 2.79152826743692 }
   };
   float hiddenWeight[][] = {
-  { -0.063325925605889, -0.288363883771032, 0.693937887913942, 0.693945059409193 },
-  { 0.064057470869886, -0.535123160973171, -0.775805799351880, -0.775794914515106 },
-  { 0.944440069296792, -1.111596189063857, -1.471815876085993, -1.471958362195871 },
-  { -0.886123527366445, 1.558834198945437, 0.077242734810675, 0.077425107884098 },
-  { -0.568610777468602, -0.614072926632399, 2.474171082220285, 2.474135658954908 },
-  { 0.108590302466931, -0.056767826815087, 1.090749141279165, 1.090749131829550 },
-  { 0.665088047256768, -0.347975015422364, 0.721931721120446, 0.721891122466033 },
-  { 0.468727766483958, -0.750530576566738, 1.590241108777221, 1.590174954281911 },
-  { -0.181042775186012, 0.213336278405742, 0.046052586013943, 0.046073885287945 }
+  { -0.374539869053815, 0.00520958749709069, 1.45041597489166, 1.45051279535150 },
+  { 0.0450913679372663, 0.105106685428046, -0.730598594275543, -0.730520130391922 },
+  { 0.163770796582358, -0.199147228985666, 3.12217013960246, 3.12381551881537 },
+  { -1.27075427183792, 0.710953002540675, -3.38983944095807, -3.39103910088049 },
+  { -0.242669899517994, -0.646304722160610, 2.14853795645904, 2.14974643764777 },
+  { -0.158782162500928, -0.146909674635699, -0.00961714629595829, -0.008957030265926 },
+  { 0.120545026126452, 0.269719021014171, -0.403459385194824, -0.403554762692929 },
+  { 0.221448389101420, 0.086036007781647, 0.826170858432722, 0.823929019418342 },
+  { -0.145356096680302, -0.346164769000769, 2.12361827932047, 2.12594115099956 }
   };
   
   float inputNeuron[];
@@ -359,8 +371,8 @@ class Siec {
     //println("InputVals[1] = " + InputVals[1] );
     
     //println("\nInputLayer: ", inputLayer);
-    inputNeuron[0] = ((1 + 1) * (InputVals[0] - 1500) / (2100 - 1500)) - 1;
-    inputNeuron[1] = ((1 + 1) * (InputVals[1] - 1500) / (2000 - 1500)) - 1;
+    inputNeuron[0] = (1 + 1) * (InputVals[0] - 1000) / (1900 - 1000) - 1;
+    inputNeuron[1] = (1 + 1) * (InputVals[1] - 1000) / (1900 - 1000) - 1;
     //println("Neuron " + x + " = " + inputNeuron[x]);
     
     //println("\nHiddenLayer: ", hiddenLayer);
@@ -385,10 +397,10 @@ class Siec {
       //println("Neuron " + z + " = " + outputNeuron[z]);
       
       if (z == 0) {
-        OutputVals[z] = 2 * (outputNeuron[z] + 1) / 2 + 3;
+        OutputVals[z] = 40 * (outputNeuron[z] + 1) / 2 + 30;
       }
       if (z == 1) {
-        OutputVals[z] = 2 * (outputNeuron[z] + 1) / 2 + 3;
+        OutputVals[z] = 40 * (outputNeuron[z] + 1) / 2 + 30;
       }
       if (z == 2) {
         OutputVals[z] = 2 * (outputNeuron[z] + 1) / 2 - 1;
